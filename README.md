@@ -5,10 +5,6 @@
 ![Unity](https://img.shields.io/badge/Unity-YAML%20GUID%20Scanning-black)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-<!-- ![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/YOUR_PUBLISHER_ID.unity-guid-usage-finder)
-![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/YOUR_PUBLISHER_ID.unity-guid-usage-finder)
-![Visual Studio Marketplace Rating](https://img.shields.io/visual-studio-marketplace/r/YOUR_PUBLISHER_ID.unity-guid-usage-finder) -->
-
 Find where your Unity scripts are actually used — in **Scenes, Prefabs, ScriptableObjects, Animations, and more** — directly inside VSCode.
 
 No more guessing. No more opening Unity just to track references.
