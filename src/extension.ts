@@ -26,6 +26,8 @@ let scanHistory: ScanHistoryEntry[] = [];
 let historyTreeProvider: HistoryTreeProvider;
 let extensionContext: vscode.ExtensionContext;
 let currentFilter: string = "";
+let autoRefreshWatcher: vscode.FileSystemWatcher | undefined;
+let autoRefreshTimer: NodeJS.Timeout | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
 	extensionContext = context;
@@ -65,6 +67,8 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	);
 
+	// Providers
+
 	usageTreeProvider = new UsageTreeProvider();
 
 	context.subscriptions.push(
@@ -84,6 +88,10 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 	historyTreeProvider.refresh();
+
+	setupAutoRefresh(context);
+
+	// Commands
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand(
@@ -285,6 +293,32 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() { }
 
+function scheduleAutoRefresh() {
+	if (!lastScriptUri || !lastGuid) {
+		return;
+	}
+
+	if (autoRefreshTimer) {
+		clearTimeout(autoRefreshTimer);
+	}
+
+	autoRefreshTimer = setTimeout(async () => {
+		await findGuidUsages(lastScriptUri!, lastGuid!, true);
+	}, 750);
+}
+
+function setupAutoRefresh(context: vscode.ExtensionContext) {
+	const includePattern = getIncludePattern();
+
+	autoRefreshWatcher = vscode.workspace.createFileSystemWatcher(includePattern);
+
+	autoRefreshWatcher.onDidChange(scheduleAutoRefresh, null, context.subscriptions);
+	autoRefreshWatcher.onDidCreate(scheduleAutoRefresh, null, context.subscriptions);
+	autoRefreshWatcher.onDidDelete(scheduleAutoRefresh, null, context.subscriptions);
+
+	context.subscriptions.push(autoRefreshWatcher);
+}
+
 function getTargetScriptUri(uri?: vscode.Uri): vscode.Uri | undefined {
 	if (uri) {
 		return uri;
@@ -304,7 +338,7 @@ function extractGuid(metaText: string): string | undefined {
 	return match?.[1];
 }
 
-async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void> {
+async function findGuidUsages(scriptUri: vscode.Uri, guid: string, silent = false): Promise<void> {
 	lastScriptUri = scriptUri;
 	lastGuid = guid;
 
@@ -401,35 +435,37 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 		`Found ${matches.length} GUID reference(s) in ${new Set(locations.map(m => m.uri.fsPath)).size} file(s).`
 	);
 
-	const selected = await vscode.window.showQuickPick(
-		matches.map((result) => {
-			const location = result.location;
-			const relativePath = vscode.workspace.asRelativePath(location.uri);
+	if (!silent) {
+		const selected = await vscode.window.showQuickPick(
+			matches.map((result) => {
+				const location = result.location;
+				const relativePath = vscode.workspace.asRelativePath(location.uri);
 
-			return {
-				label: path.basename(location.uri.fsPath),
-				description: result.gameObjectName
-					? `GameObject: ${result.gameObjectName}`
-					: getFileGroup(location.uri.fsPath),
-				detail: `${relativePath}:${location.range.start.line + 1}`,
-				location
-			};
-		}),
-		{
-			placeHolder: "Select a Unity usage to open"
-		}
-	);
-
-	if (selected) {
-		const doc = await vscode.workspace.openTextDocument(selected.location.uri);
-		const editor = await vscode.window.showTextDocument(doc);
-
-		editor.selection = new vscode.Selection(
-			selected.location.range.start,
-			selected.location.range.start
+				return {
+					label: path.basename(location.uri.fsPath),
+					description: result.gameObjectName
+						? `GameObject: ${result.gameObjectName}`
+						: getFileGroup(location.uri.fsPath),
+					detail: `${relativePath}:${location.range.start.line + 1}`,
+					location
+				};
+			}),
+			{
+				placeHolder: "Select a Unity usage to open"
+			}
 		);
 
-		editor.revealRange(selected.location.range, vscode.TextEditorRevealType.InCenter);
+		if (selected) {
+			const doc = await vscode.workspace.openTextDocument(selected.location.uri);
+			const editor = await vscode.window.showTextDocument(doc);
+
+			editor.selection = new vscode.Selection(
+				selected.location.range.start,
+				selected.location.range.start
+			);
+
+			editor.revealRange(selected.location.range, vscode.TextEditorRevealType.InCenter);
+		}
 	}
 }
 
