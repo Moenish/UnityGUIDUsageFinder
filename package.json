@@ -131,7 +131,7 @@
         },
         {
           "command": "unityGuidUsageFinder.clearFilter",
-          "when": "view == unityGuidUsageFinder.resultsView",
+          "when": "view == unityGuidUsageFinder.resultsView && unityGuidUsageFinder.hasFilter",
           "group": "navigation@5"
         }
       ],

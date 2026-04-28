@@ -80,6 +80,7 @@ export function activate(context: vscode.ExtensionContext) {
 	historyTreeProvider.refresh();
 
 	setupAutoRefresh(context);
+	setFilterContext();
 
 	// Commands
 
@@ -529,6 +530,12 @@ class UsageTreeItem extends vscode.TreeItem {
 			return;
 		}
 
+		if (groupName === "filterIndicator") {
+			this.iconPath = new vscode.ThemeIcon("filter", new vscode.ThemeColor("charts.yellow"));
+			this.contextValue = "filterIndicator";
+			return;
+		}
+
 		if (location) {
 			this.command = {
 				command: "unityGuidUsageFinder.openUsage",
@@ -554,7 +561,8 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 	private groupedResults = new Map<string, UsageResult[]>();
 
 	setFilter(filter: string) {
-		currentFilter = filter.toLowerCase();
+		currentFilter = filter.trim().toLowerCase();
+		setFilterContext();
 		this.emitter.fire();
 	}
 
@@ -603,7 +611,7 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 				];
 			}
 
-			return visibleGroups.map(group => {
+			const groupItems = visibleGroups.map(group => {
 				const count = this.getFilteredResultsForGroup(group).length;
 
 				const item = new UsageTreeItem(
@@ -617,6 +625,20 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 
 				return item;
 			});
+
+			if (currentFilter) {
+				return [
+					new UsageTreeItem(
+						`Filter: "${currentFilter}"`,
+						vscode.TreeItemCollapsibleState.None,
+						undefined,
+						"filterIndicator"
+					),
+					...groupItems
+				];
+			}
+
+			return groupItems;
 		}
 
 		const group = element.groupName ?? element.label;
@@ -934,4 +956,12 @@ async function openUsageLocation(location: vscode.Location) {
 	);
 
 	editor.revealRange(location.range, vscode.TextEditorRevealType.InCenter);
+}
+
+function setFilterContext() {
+	vscode.commands.executeCommand(
+		"setContext",
+		"unityGuidUsageFinder.hasFilter",
+		currentFilter.length > 0
+	);
 }
