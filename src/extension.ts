@@ -23,6 +23,7 @@ type ScanHistoryEntry = {
 };
 
 let scanHistory: ScanHistoryEntry[] = [];
+let historyTreeProvider: HistoryTreeProvider;
 
 export function activate(context: vscode.ExtensionContext) {
 	const disposable = vscode.commands.registerCommand(
@@ -65,6 +66,15 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.registerTreeDataProvider(
 			"unityGuidUsageFinder.resultsView",
 			usageTreeProvider
+		)
+	);
+
+	historyTreeProvider = new HistoryTreeProvider();
+
+	context.subscriptions.push(
+		vscode.window.registerTreeDataProvider(
+			"unityGuidUsageFinder.historyView",
+			historyTreeProvider
 		)
 	);
 
@@ -161,6 +171,16 @@ export function activate(context: vscode.ExtensionContext) {
 				vscode.window.showInformationMessage(
 					`Restored scan: ${selected.entry.scriptName} (${selected.entry.results.length} result(s))`
 				);
+			}
+		)
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			"unityGuidUsageFinder.loadHistoryEntry",
+			(entry: ScanHistoryEntry) => {
+				const grouped = groupMatches(entry.results);
+				usageTreeProvider.setResults(grouped);
 			}
 		)
 	);
@@ -524,4 +544,41 @@ function addScanToHistory(scriptUri: vscode.Uri, guid: string, results: UsageRes
 		entry,
 		...scanHistory.filter(existing => existing.scriptPath !== scriptUri.fsPath)
 	].slice(0, 20);
+
+	historyTreeProvider.refresh();
+}
+
+class HistoryTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
+	private readonly emitter = new vscode.EventEmitter<void>();
+	readonly onDidChangeTreeData = this.emitter.event;
+
+	refresh() {
+		this.emitter.fire();
+	}
+
+	getTreeItem(element: UsageTreeItem): vscode.TreeItem {
+		return element;
+	}
+
+	getChildren(): UsageTreeItem[] {
+		return scanHistory.map(entry => {
+			const label = `${entry.scriptName} (${entry.results.length})`;
+
+			const item = new UsageTreeItem(
+				label,
+				vscode.TreeItemCollapsibleState.None
+			);
+
+			item.tooltip = `${entry.scriptPath}\n${entry.scannedAt.toLocaleString()}`;
+			item.iconPath = new vscode.ThemeIcon("history");
+
+			item.command = {
+				command: "unityGuidUsageFinder.loadHistoryEntry",
+				title: "Load History",
+				arguments: [entry]
+			};
+
+			return item;
+		});
+	}
 }

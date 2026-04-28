@@ -6,11 +6,14 @@
   "engines": {
     "vscode": "^1.90.0"
   },
-  "categories": [
-    "Other"
-  ],
+  "categories": ["Other"],
   "activationEvents": [
-    "onCommand:unityGuidUsageFinder.findScriptUsages"
+    "onCommand:unityGuidUsageFinder.findScriptUsages",
+    "onCommand:unityGuidUsageFinder.refreshLastSearch",
+    "onCommand:unityGuidUsageFinder.clearResults",
+    "onCommand:unityGuidUsageFinder.copyCurrentScriptGuid",
+    "onCommand:unityGuidUsageFinder.showScanHistory",
+    "onCommand:unityGuidUsageFinder.loadHistoryEntry"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -21,19 +24,26 @@
       },
       {
         "command": "unityGuidUsageFinder.refreshLastSearch",
-        "title": "Unity GUID: Refresh Last Script Usage Search"
+        "title": "Refresh",
+        "icon": "$(refresh)"
       },
       {
         "command": "unityGuidUsageFinder.clearResults",
-        "title": "Unity: Clear Usage Results"
+        "title": "Clear",
+        "icon": "$(trash)"
       },
       {
         "command": "unityGuidUsageFinder.copyCurrentScriptGuid",
-        "title": "Unity: Copy Script GUID"
+        "title": "Unity GUID: Copy Script GUID"
       },
       {
         "command": "unityGuidUsageFinder.showScanHistory",
-        "title": "Unity: Show Scan History"
+        "title": "History",
+        "icon": "$(history)"
+      },
+      {
+        "command": "unityGuidUsageFinder.loadHistoryEntry",
+        "title": "Unity GUID: Load History Entry"
       }
     ],
     "menus": {
@@ -65,17 +75,12 @@
         {
           "command": "unityGuidUsageFinder.refreshLastSearch",
           "when": "view == unityGuidUsageFinder.resultsView",
-          "group": "navigation"
+          "group": "navigation@1"
         },
         {
           "command": "unityGuidUsageFinder.clearResults",
           "when": "view == unityGuidUsageFinder.resultsView",
-          "group": "navigation"
-        },
-        {
-          "command": "unityGuidUsageFinder.showScanHistory",
-          "when": "view == unityGuidUsageFinder.resultsView",
-          "group": "navigation"
+          "group": "navigation@2"
         }
       ]
     },
@@ -93,6 +98,10 @@
         {
           "id": "unityGuidUsageFinder.resultsView",
           "name": "Script Usages"
+        },
+        {
+          "id": "unityGuidUsageFinder.historyView",
+          "name": "Scan History"
         }
       ]
     },
