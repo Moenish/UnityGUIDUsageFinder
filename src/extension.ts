@@ -452,6 +452,12 @@ class UsageTreeItem extends vscode.TreeItem {
 	) {
 		super(label, collapsibleState);
 
+		if (groupName === "placeholder") {
+			this.iconPath = new vscode.ThemeIcon("info", new vscode.ThemeColor("charts.blue"));
+			this.contextValue = "placeholder";
+			return;
+		}
+
 		if (location) {
 			this.command = {
 				command: "unityGuidUsageFinder.openUsage",
@@ -496,6 +502,17 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 
 	getChildren(element?: UsageTreeItem): UsageTreeItem[] {
 		if (!element) {
+			if (this.groupedResults.size === 0) {
+				return [
+					new UsageTreeItem(
+						"No script usages loaded yet",
+						vscode.TreeItemCollapsibleState.None,
+						undefined,
+						"placeholder"
+					)
+				];
+			}
+
 			return [...this.groupedResults.keys()].map(
 				group => new UsageTreeItem(
 					group,
@@ -634,6 +651,17 @@ class HistoryTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 	}
 
 	getChildren(): UsageTreeItem[] {
+		if (scanHistory.length === 0) {
+			return [
+				new UsageTreeItem(
+					"No scan history yet",
+					vscode.TreeItemCollapsibleState.None,
+					undefined,
+					"placeholder"
+				)
+			];
+		}
+
 		return scanHistory.map(entry => {
 			const label = `${entry.scriptName} (${entry.results.length})`;
 
