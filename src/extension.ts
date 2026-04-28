@@ -167,10 +167,15 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 		{
 			location: vscode.ProgressLocation.Notification,
 			title: "Scanning Unity serialized assets",
-			cancellable: false
+			cancellable: true
 		},
-		async (progress) => {
+		async (progress, token) => {
 			for (let index = 0; index < files.length; index++) {
+				if (token.isCancellationRequested) {
+					output.appendLine("Scan cancelled.");
+					return;
+				}
+
 				const file = files[index];
 
 				progress.report({
