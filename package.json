@@ -17,7 +17,11 @@
     "commands": [
       {
         "command": "unityGuidUsageFinder.findScriptUsages",
-        "title": "Unity: Find Script Usages by GUID"
+        "title": "Unity GUID: Find Script Usages by GUID"
+      },
+      {
+        "command": "unityGuidUsageFinder.refreshLastSearch",
+        "title": "Unity GUID: Refresh Last Script Usage Search"
       }
     ],
     "menus": {
@@ -32,6 +36,13 @@
         {
           "command": "unityGuidUsageFinder.findScriptUsages",
           "when": "resourceExtname == .cs",
+          "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "unityGuidUsageFinder.refreshLastSearch",
+          "when": "view == unityGuidUsageFinder.resultsView",
           "group": "navigation"
         }
       ]

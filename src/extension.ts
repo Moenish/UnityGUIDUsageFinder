@@ -67,11 +67,28 @@ export function activate(context: vscode.ExtensionContext) {
 		)
 	);
 
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			"unityGuidUsageFinder.refreshLastSearch",
+			async () => {
+				if (!lastScriptUri || !lastGuid) {
+					vscode.window.showInformationMessage("No previous Unity GUID search to refresh.");
+					return;
+				}
+
+				await findGuidUsages(lastScriptUri, lastGuid);
+			}
+		)
+	);
+
 	context.subscriptions.push(disposable);
 }
 
 export function deactivate() { }
+
 let usageTreeProvider: UsageTreeProvider;
+let lastScriptUri: vscode.Uri | undefined;
+let lastGuid: string | undefined;
 
 function getTargetScriptUri(uri?: vscode.Uri): vscode.Uri | undefined {
 	if (uri) {
@@ -93,6 +110,9 @@ function extractGuid(metaText: string): string | undefined {
 }
 
 async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void> {
+	lastScriptUri = scriptUri;
+	lastGuid = guid;
+
 	const output = vscode.window.createOutputChannel("Unity GUID Usage Finder");
 	output.clear();
 	output.show(true);
