@@ -6,14 +6,17 @@
   "engines": {
     "vscode": "^1.90.0"
   },
-  "categories": ["Other"],
+  "categories": [
+    "Other"
+  ],
   "activationEvents": [
     "onCommand:unityGuidUsageFinder.findScriptUsages",
     "onCommand:unityGuidUsageFinder.refreshLastSearch",
     "onCommand:unityGuidUsageFinder.clearResults",
     "onCommand:unityGuidUsageFinder.copyCurrentScriptGuid",
     "onCommand:unityGuidUsageFinder.showScanHistory",
-    "onCommand:unityGuidUsageFinder.loadHistoryEntry"
+    "onCommand:unityGuidUsageFinder.loadHistoryEntry",
+    "onCommand:unityGuidUsageFinder.revealUsageInExplorer"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -44,6 +47,11 @@
       {
         "command": "unityGuidUsageFinder.loadHistoryEntry",
         "title": "Unity GUID: Load History Entry"
+      },
+      {
+        "command": "unityGuidUsageFinder.revealUsageInExplorer",
+        "title": "Reveal Usage in Explorer",
+        "icon": "$(folder-opened)"
       }
     ],
     "menus": {
@@ -81,6 +89,13 @@
           "command": "unityGuidUsageFinder.clearResults",
           "when": "view == unityGuidUsageFinder.resultsView",
           "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "unityGuidUsageFinder.revealUsageInExplorer",
+          "when": "view == unityGuidUsageFinder.resultsView && viewItem == usage",
+          "group": "navigation"
         }
       ]
     },

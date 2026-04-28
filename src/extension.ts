@@ -195,6 +195,30 @@ export function activate(context: vscode.ExtensionContext) {
 		)
 	);
 
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			"unityGuidUsageFinder.revealUsageInExplorer",
+			async (item?: UsageTreeItem | vscode.Location | vscode.Uri) => {
+				let uri: vscode.Uri | undefined;
+
+				if (item instanceof vscode.Uri) {
+					uri = item;
+				} else if (item instanceof vscode.Location) {
+					uri = item.uri;
+				} else if (item instanceof UsageTreeItem && item.location) {
+					uri = item.location.uri;
+				}
+
+				if (!uri) {
+					vscode.window.showErrorMessage("Could not determine which usage to reveal.");
+					return;
+				}
+
+				await vscode.commands.executeCommand("revealInExplorer", uri);
+			}
+		)
+	);
+
 	context.subscriptions.push(disposable);
 }
 
