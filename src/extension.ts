@@ -233,6 +233,10 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 
 	const matchesByFile = new Map<string, UsageResult>();
 
+	const batchSize = 12;
+	const batches = chunkArray(files, batchSize);
+	let scannedCount = 0;
+
 	await vscode.window.withProgress(
 		{
 			location: vscode.ProgressLocation.Notification,
@@ -240,40 +244,36 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 			cancellable: true
 		},
 		async (progress, token) => {
-			for (let index = 0; index < files.length; index++) {
+			for (const batch of batches) {
 				if (token.isCancellationRequested) {
 					output.appendLine("Scan cancelled.");
 					return;
 				}
 
-				const file = files[index];
-
-				progress.report({
-					message: `${index + 1}/${files.length}: ${vscode.workspace.asRelativePath(file)}`
-				});
-
-				const text = await readTextFile(file);
-
-				if (!text.includes(guid)) {
-					continue;
-				}
-
-				const lines = text.split(/\r?\n/);
-
-				for (let i = 0; i < lines.length; i++) {
-					const column = lines[i].indexOf(guid);
-
-					if (column >= 0) {
-						const position = new vscode.Position(i, column);
-
-						if (!matchesByFile.has(file.fsPath)) {
-							matchesByFile.set(file.fsPath, {
-								location: new vscode.Location(file, position),
-								gameObjectName: findGameObjectNameForScript(text, guid)
-							});
+				const results = await Promise.all(
+					batch.map(async file => {
+						if (token.isCancellationRequested) {
+							return undefined;
 						}
 
-						break;
+						const result = await scanFileForGuid(file, guid);
+						scannedCount++;
+
+						progress.report({
+							message: `${scannedCount}/${files.length}`
+						});
+
+						return result;
+					})
+				);
+
+				for (const result of results) {
+					if (!result) {
+						continue;
+					}
+
+					if (!matchesByFile.has(result.location.uri.fsPath)) {
+						matchesByFile.set(result.location.uri.fsPath, result);
 					}
 				}
 			}
@@ -638,4 +638,39 @@ function loadScanHistory() {
 			gameObjectName: result.gameObjectName
 		}))
 	}));
+}
+
+function chunkArray<T>(items: T[], chunkSize: number): T[][] {
+	const chunks: T[][] = [];
+
+	for (let i = 0; i < items.length; i += chunkSize) {
+		chunks.push(items.slice(i, i + chunkSize));
+	}
+
+	return chunks;
+}
+
+async function scanFileForGuid(file: vscode.Uri, guid: string): Promise<UsageResult | undefined> {
+	const text = await readTextFile(file);
+
+	if (!text.includes(guid)) {
+		return undefined;
+	}
+
+	const lines = text.split(/\r?\n/);
+
+	for (let i = 0; i < lines.length; i++) {
+		const column = lines[i].indexOf(guid);
+
+		if (column >= 0) {
+			const position = new vscode.Position(i, column);
+
+			return {
+				location: new vscode.Location(file, position),
+				gameObjectName: findGameObjectNameForScript(text, guid)
+			};
+		}
+	}
+
+	return undefined;
 }
