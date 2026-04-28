@@ -104,7 +104,7 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 	const includePattern = "{Assets/**/*.unity,Assets/**/*.prefab,Assets/**/*.asset,Assets/**/*.controller,Assets/**/*.overrideController,Assets/**/*.anim,Assets/**/*.mat}";
 	const files = await vscode.workspace.findFiles(includePattern, "**/{Library,Temp,Obj,Build,Builds,Logs,Packages}/**");
 
-	const matchesByFile = new Map<string, vscode.Location>();
+	const matchesByFile = new Map<string, UsageResult>();
 
 	for (const file of files) {
 		const text = await readTextFile(file);
@@ -120,14 +120,21 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 
 			if (column >= 0) {
 				const position = new vscode.Position(i, column);
+
 				if (!matchesByFile.has(file.fsPath)) {
-					matchesByFile.set(file.fsPath, new vscode.Location(file, position));
+					matchesByFile.set(file.fsPath, {
+						location: new vscode.Location(file, position),
+						gameObjectName: findGameObjectNameForScript(text, guid)
+					});
 				}
+
+				break;
 			}
 		}
 	}
 
 	const matches = [...matchesByFile.values()];
+	const locations = matches.map(m => m.location);
 
 	if (matches.length === 0) {
 		output.appendLine("No Unity serialized usages found.");
@@ -138,26 +145,34 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 	const grouped = groupMatches(matches);
 	usageTreeProvider.setResults(grouped);
 
-	for (const [groupName, locations] of grouped) {
+	for (const [groupName, groupLocations] of grouped) {
 		output.appendLine(groupName);
 		output.appendLine("=".repeat(groupName.length));
 
-		for (const location of locations) {
+		for (const result of groupLocations) {
+			const location = result.location;
 			const relativePath = vscode.workspace.asRelativePath(location.uri);
-			output.appendLine(`${relativePath}:${location.range.start.line + 1}:${location.range.start.character + 1}`);
+			const gameObject = result.gameObjectName ? ` — ${result.gameObjectName}` : "";
+			output.appendLine(`${relativePath}:${location.range.start.line + 1}:${location.range.start.character + 1}${gameObject}`);
 		}
 
 		output.appendLine("");
 	}
 
-	output.appendLine(`Found ${matches.length} GUID reference(s) in ${new Set(matches.map(m => m.uri.fsPath)).size} file(s).`);
+	output.appendLine(
+		`Found ${matches.length} GUID reference(s) in ${new Set(locations.map(m => m.uri.fsPath)).size} file(s).`
+	);
 
 	const selected = await vscode.window.showQuickPick(
-		matches.map((location) => {
+		matches.map((result) => {
+			const location = result.location;
 			const relativePath = vscode.workspace.asRelativePath(location.uri);
+
 			return {
 				label: path.basename(location.uri.fsPath),
-				description: getFileGroup(location.uri.fsPath),
+				description: result.gameObjectName
+					? `GameObject: ${result.gameObjectName}`
+					: getFileGroup(location.uri.fsPath),
 				detail: `${relativePath}:${location.range.start.line + 1}`,
 				location
 			};
@@ -180,11 +195,11 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 	}
 }
 
-function groupMatches(matches: vscode.Location[]): Map<string, vscode.Location[]> {
-	const grouped = new Map<string, vscode.Location[]>();
+function groupMatches(matches: UsageResult[]): Map<string, UsageResult[]> {
+	const grouped = new Map<string, UsageResult[]>();
 
 	for (const match of matches) {
-		const group = getFileGroup(match.uri.fsPath);
+		const group = getFileGroup(match.location.uri.fsPath);
 
 		if (!grouped.has(group)) {
 			grouped.set(group, []);
@@ -244,9 +259,9 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 	private readonly emitter = new vscode.EventEmitter<UsageTreeItem | undefined | null | void>();
 	readonly onDidChangeTreeData = this.emitter.event;
 
-	private groupedResults = new Map<string, vscode.Location[]>();
+	private groupedResults = new Map<string, UsageResult[]>();
 
-	setResults(groupedResults: Map<string, vscode.Location[]>) {
+	setResults(groupedResults: Map<string, UsageResult[]>) {
 		this.groupedResults = groupedResults;
 		this.emitter.fire();
 	}
@@ -262,15 +277,64 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 			);
 		}
 
-		const locations = this.groupedResults.get(element.label) ?? [];
+		const results = this.groupedResults.get(element.label) ?? [];
 
-		return locations.map(location => {
-			const relativePath = vscode.workspace.asRelativePath(location.uri);
-			return new UsageTreeItem(
-				relativePath,
+		return results.map(result => {
+			const relativePath = vscode.workspace.asRelativePath(result.location.uri);
+			const label = result.gameObjectName
+				? `${path.basename(result.location.uri.fsPath)} — ${result.gameObjectName}`
+				: relativePath;
+
+			const item = new UsageTreeItem(
+				label,
 				vscode.TreeItemCollapsibleState.None,
-				location
+				result.location
 			);
+
+			item.description = result.gameObjectName
+				? relativePath
+				: `Line ${result.location.range.start.line + 1}`;
+
+			return item;
 		});
 	}
+}
+
+type UsageResult = {
+	location: vscode.Location;
+	gameObjectName?: string;
+};
+
+function findGameObjectNameForScript(text: string, guid: string): string | undefined {
+	const scriptIndex = text.indexOf(guid);
+
+	if (scriptIndex < 0) {
+		return undefined;
+	}
+
+	const componentStart = text.lastIndexOf("--- !u!", scriptIndex);
+	const componentBlock = text.slice(componentStart, scriptIndex);
+
+	const gameObjectMatch = componentBlock.match(/m_GameObject:\s*\{fileID:\s*(-?\d+)\}/);
+
+	if (!gameObjectMatch) {
+		return undefined;
+	}
+
+	const gameObjectFileId = gameObjectMatch[1];
+
+	const gameObjectHeaderRegex = new RegExp(`--- !u!1 &${escapeRegExp(gameObjectFileId)}\\s+GameObject:[\\s\\S]*?(?=--- !u!|$)`);
+	const gameObjectMatchBlock = text.match(gameObjectHeaderRegex);
+
+	if (!gameObjectMatchBlock) {
+		return undefined;
+	}
+
+	const nameMatch = gameObjectMatchBlock[0].match(/m_Name:\s*(.+)/);
+
+	return nameMatch?.[1]?.trim();
+}
+
+function escapeRegExp(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
