@@ -215,6 +215,11 @@
           "type": "boolean",
           "default": false,
           "description": "Show a Quick Pick list of usages after a manual scan completes."
+        },
+        "unityGuidUsageFinder.openSelectedUsageFromQuickPick": {
+          "type": "boolean",
+          "default": true,
+          "description": "Open the selected usage after choosing it from the Quick Pick list."
         }
       }
     }

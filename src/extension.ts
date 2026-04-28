@@ -97,10 +97,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand(
 			"unityGuidUsageFinder.openUsage",
 			async (location: vscode.Location) => {
-				const doc = await vscode.workspace.openTextDocument(location.uri);
-				const editor = await vscode.window.showTextDocument(doc);
-				editor.selection = new vscode.Selection(location.range.start, location.range.start);
-				editor.revealRange(location.range, vscode.TextEditorRevealType.InCenter);
+				await openUsageLocation(location);
 			}
 		)
 	);
@@ -483,16 +480,8 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string, silent = fals
 			}
 		);
 
-		if (selected) {
-			const doc = await vscode.workspace.openTextDocument(selected.location.uri);
-			const editor = await vscode.window.showTextDocument(doc);
-
-			editor.selection = new vscode.Selection(
-				selected.location.range.start,
-				selected.location.range.start
-			);
-
-			editor.revealRange(selected.location.range, vscode.TextEditorRevealType.InCenter);
+		if (selected && shouldOpenSelectedUsageFromQuickPick()) {
+			await openUsageLocation(selected.location);
 		}
 	}
 }
@@ -906,4 +895,21 @@ function getMaxHistoryEntries(): number {
 function shouldShowQuickPickAfterScan(): boolean {
 	const config = vscode.workspace.getConfiguration("unityGuidUsageFinder");
 	return config.get<boolean>("showQuickPickAfterScan") ?? true;
+}
+
+function shouldOpenSelectedUsageFromQuickPick(): boolean {
+	const config = vscode.workspace.getConfiguration("unityGuidUsageFinder");
+	return config.get<boolean>("openSelectedUsageFromQuickPick") ?? true;
+}
+
+async function openUsageLocation(location: vscode.Location) {
+	const doc = await vscode.workspace.openTextDocument(location.uri);
+	const editor = await vscode.window.showTextDocument(doc);
+
+	editor.selection = new vscode.Selection(
+		location.range.start,
+		location.range.start
+	);
+
+	editor.revealRange(location.range, vscode.TextEditorRevealType.InCenter);
 }
