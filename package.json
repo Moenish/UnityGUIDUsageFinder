@@ -9,6 +9,19 @@
   "categories": [
     "Other"
   ],
+  "license": "MIT",
+  "keywords": [
+    "unity",
+    "guid",
+    "references",
+    "usage finder",
+    "prefab",
+    "scene",
+    "scriptableobject",
+    "gamedev",
+    "unity tools",
+    "vscode unity"
+  ],
   "activationEvents": [
     "onCommand:unityGuidUsageFinder.findScriptUsages",
     "onCommand:unityGuidUsageFinder.refreshLastSearch",

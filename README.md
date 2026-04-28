@@ -1,71 +1,182 @@
-# unity-guid-usage-finder README
+# 🧭 Unity GUID Usage Finder
 
-This is the README for your extension "unity-guid-usage-finder". After writing up a brief description, we recommend including the following sections.
+![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![VSCode](https://img.shields.io/badge/VSCode-%5E1.90.0-007ACC)
+![Unity](https://img.shields.io/badge/Unity-YAML%20GUID%20Scanning-black)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## Features
+<!-- ![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/YOUR_PUBLISHER_ID.unity-guid-usage-finder)
+![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/YOUR_PUBLISHER_ID.unity-guid-usage-finder)
+![Visual Studio Marketplace Rating](https://img.shields.io/visual-studio-marketplace/r/YOUR_PUBLISHER_ID.unity-guid-usage-finder) -->
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+Find where your Unity scripts are actually used — in **Scenes, Prefabs, ScriptableObjects, Animations, and more** — directly inside VSCode.
 
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+No more guessing. No more opening Unity just to track references.
 
 ---
 
-## Following extension guidelines
+## ✨ Features
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+### 🔍 Find Script Usages by GUID
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+Right-click any `.cs` file → **Find Script Usages**
 
-## Working with Markdown
+* Scans Unity serialized files (`.prefab`, `.unity`, `.asset`, etc.)
+* Finds all references using the script’s GUID
+* Groups results by type:
 
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+  * Scenes
+  * Prefabs
+  * ScriptableObjects
+  * Animations / Animators
+  * Materials
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
+---
 
-## For more information
+### 📂 Interactive Results Panel
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+* Click any result → jumps to file + line
+* Shows **GameObject name** (when available)
+* Grouped and counted:
 
-**Enjoy!**
+```
+Prefabs (12)
+Scenes (3)
+```
+
+---
+
+### 🔎 Smart Filtering
+
+* Filter by:
+
+  * File name
+  * GameObject name
+* Live filtering in sidebar
+* Visual indicator:
+
+```
+Filter: "enemy" — 6 match(es)
+```
+
+* Click the filter row to edit it
+* Clear button auto-hides when not needed
+
+---
+
+### ⚡ Fast Scanning
+
+* Parallel file scanning
+* Configurable batch size
+* Progress indicator + cancel support
+
+---
+
+### 🔄 Auto Refresh
+
+* Automatically updates results when Unity assets change
+* Debounced to avoid excessive rescans
+* Fully configurable
+
+---
+
+### 🕘 Scan History
+
+* Stores recent scans (persisted between sessions)
+* Separate **History panel**
+* Click to restore results instantly
+* Highlights current active scan
+
+---
+
+### 🧰 Utility Commands
+
+* Copy script GUID
+* Reveal usage in Explorer
+* Open all usages at once
+* Clear results / history
+
+---
+
+## ⚙️ Extension Settings
+
+### 🔍 Scanning Settings
+
+* `unityGuidUsageFinder.includeGlobs`
+  Files to scan
+
+* `unityGuidUsageFinder.excludeGlob`
+  Folders to ignore
+
+* `unityGuidUsageFinder.scanBatchSize`
+  Parallel scan size (default: 12)
+
+---
+
+### 🔄 Auto Refresh Settings
+
+* `unityGuidUsageFinder.autoRefresh`
+  Enable/disable auto refresh
+
+* `unityGuidUsageFinder.autoRefreshDebounceMs`
+  Delay before refresh (default: 750ms)
+
+---
+
+### 🧠 Behavior Settings
+
+* `unityGuidUsageFinder.showQuickPickAfterScan`
+  Show result picker after scan
+
+* `unityGuidUsageFinder.openSelectedUsageFromQuickPick`
+  Open selected result automatically
+
+---
+
+### 🕘 History Settings
+
+* `unityGuidUsageFinder.maxHistoryEntries`
+  Number of stored scans (0 = disabled)
+
+---
+
+## 🧩 Requirements
+
+* Unity project with `.meta` files
+* Text-serialized assets (YAML)
+
+---
+
+## ⚠️ Known Limitations
+
+* Does not scan binary Unity assets
+* Very large projects may take time to scan
+
+---
+
+## 🚀 Why this exists
+
+Unity knows where scripts are used.
+VSCode doesn’t.
+
+This bridges that gap.
+
+---
+
+## 📝 Release Notes
+
+### 0.1.0
+
+* Initial release
+* GUID-based usage scanning
+* Results tree view
+* GameObject name detection
+* Filtering system
+* Persistent scan history
+* Auto-refresh support
+* Configurable performance
+
+## 🤖 Development Note
+
+This extension was developed with the assistance of AI tools.  
+All design decisions, implementation, and validation were guided and reviewed by the author.
