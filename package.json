@@ -26,6 +26,10 @@
       {
         "command": "unityGuidUsageFinder.clearResults",
         "title": "Unity: Clear Usage Results"
+      },
+      {
+        "command": "unityGuidUsageFinder.copyCurrentScriptGuid",
+        "title": "Unity: Copy Script GUID"
       }
     ],
     "menus": {
@@ -34,11 +38,21 @@
           "command": "unityGuidUsageFinder.findScriptUsages",
           "when": "resourceExtname == .cs",
           "group": "navigation"
+        },
+        {
+          "command": "unityGuidUsageFinder.copyCurrentScriptGuid",
+          "when": "resourceExtname == .cs",
+          "group": "navigation"
         }
       ],
       "editor/context": [
         {
           "command": "unityGuidUsageFinder.findScriptUsages",
+          "when": "resourceExtname == .cs",
+          "group": "navigation"
+        },
+        {
+          "command": "unityGuidUsageFinder.copyCurrentScriptGuid",
           "when": "resourceExtname == .cs",
           "group": "navigation"
         }

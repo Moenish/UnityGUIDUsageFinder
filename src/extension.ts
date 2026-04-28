@@ -91,6 +91,32 @@ export function activate(context: vscode.ExtensionContext) {
 		)
 	);
 
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			"unityGuidUsageFinder.copyCurrentScriptGuid",
+			async (uri?: vscode.Uri) => {
+				const scriptUri = getTargetScriptUri(uri);
+
+				if (!scriptUri || path.extname(scriptUri.fsPath).toLowerCase() !== ".cs") {
+					vscode.window.showErrorMessage("Open or right-click a Unity .cs script first.");
+					return;
+				}
+
+				const metaUri = vscode.Uri.file(scriptUri.fsPath + ".meta");
+				const metaText = await readTextFile(metaUri);
+				const guid = extractGuid(metaText);
+
+				if (!guid) {
+					vscode.window.showErrorMessage(`Could not find guid in ${path.basename(metaUri.fsPath)}.`);
+					return;
+				}
+
+				await vscode.env.clipboard.writeText(guid);
+				vscode.window.showInformationMessage(`Copied Unity script GUID: ${guid}`);
+			}
+		)
+	);
+
 	context.subscriptions.push(disposable);
 }
 
