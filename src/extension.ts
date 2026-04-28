@@ -104,7 +104,7 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 	const includePattern = "{Assets/**/*.unity,Assets/**/*.prefab,Assets/**/*.asset,Assets/**/*.controller,Assets/**/*.overrideController,Assets/**/*.anim,Assets/**/*.mat}";
 	const files = await vscode.workspace.findFiles(includePattern, "**/{Library,Temp,Obj,Build,Builds,Logs,Packages}/**");
 
-	const matches: vscode.Location[] = [];
+	const matchesByFile = new Map<string, vscode.Location>();
 
 	for (const file of files) {
 		const text = await readTextFile(file);
@@ -120,10 +120,14 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 
 			if (column >= 0) {
 				const position = new vscode.Position(i, column);
-				matches.push(new vscode.Location(file, position));
+				if (!matchesByFile.has(file.fsPath)) {
+					matchesByFile.set(file.fsPath, new vscode.Location(file, position));
+				}
 			}
 		}
 	}
+
+	const matches = [...matchesByFile.values()];
 
 	if (matches.length === 0) {
 		output.appendLine("No Unity serialized usages found.");
