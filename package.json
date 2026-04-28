@@ -22,6 +22,10 @@
       {
         "command": "unityGuidUsageFinder.refreshLastSearch",
         "title": "Unity GUID: Refresh Last Script Usage Search"
+      },
+      {
+        "command": "unityGuidUsageFinder.clearResults",
+        "title": "Unity: Clear Usage Results"
       }
     ],
     "menus": {
@@ -42,6 +46,11 @@
       "view/title": [
         {
           "command": "unityGuidUsageFinder.refreshLastSearch",
+          "when": "view == unityGuidUsageFinder.resultsView",
+          "group": "navigation"
+        },
+        {
+          "command": "unityGuidUsageFinder.clearResults",
           "when": "view == unityGuidUsageFinder.resultsView",
           "group": "navigation"
         }

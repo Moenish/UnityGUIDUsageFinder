@@ -81,6 +81,16 @@ export function activate(context: vscode.ExtensionContext) {
 		)
 	);
 
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			"unityGuidUsageFinder.clearResults",
+			() => {
+				usageTreeProvider.clearResults();
+				vscode.window.showInformationMessage("Unity GUID usage results cleared.");
+			}
+		)
+	);
+
 	context.subscriptions.push(disposable);
 }
 
@@ -283,6 +293,11 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 
 	setResults(groupedResults: Map<string, UsageResult[]>) {
 		this.groupedResults = groupedResults;
+		this.emitter.fire();
+	}
+
+	clearResults() {
+		this.groupedResults.clear();
 		this.emitter.fire();
 	}
 
