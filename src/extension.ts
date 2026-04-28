@@ -24,8 +24,12 @@ type ScanHistoryEntry = {
 
 let scanHistory: ScanHistoryEntry[] = [];
 let historyTreeProvider: HistoryTreeProvider;
+let extensionContext: vscode.ExtensionContext;
 
 export function activate(context: vscode.ExtensionContext) {
+	extensionContext = context;
+	loadScanHistory();
+
 	const disposable = vscode.commands.registerCommand(
 		"unityGuidUsageFinder.findScriptUsages",
 		async (uri?: vscode.Uri) => {
@@ -77,6 +81,8 @@ export function activate(context: vscode.ExtensionContext) {
 			historyTreeProvider
 		)
 	);
+
+	historyTreeProvider.refresh();
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand(
@@ -545,7 +551,8 @@ function addScanToHistory(scriptUri: vscode.Uri, guid: string, results: UsageRes
 		...scanHistory.filter(existing => existing.scriptPath !== scriptUri.fsPath)
 	].slice(0, 20);
 
-	historyTreeProvider.refresh();
+	saveScanHistory();
+	historyTreeProvider?.refresh();
 }
 
 class HistoryTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
@@ -581,4 +588,54 @@ class HistoryTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 			return item;
 		});
 	}
+}
+
+type SerializedUsageResult = {
+	filePath: string;
+	line: number;
+	column: number;
+	gameObjectName?: string;
+};
+
+type SerializedScanHistoryEntry = {
+	scriptPath: string;
+	scriptName: string;
+	guid: string;
+	scannedAt: string;
+	results: SerializedUsageResult[];
+};
+
+function saveScanHistory() {
+	const serialized: SerializedScanHistoryEntry[] = scanHistory.map(entry => ({
+		scriptPath: entry.scriptPath,
+		scriptName: entry.scriptName,
+		guid: entry.guid,
+		scannedAt: entry.scannedAt.toISOString(),
+		results: entry.results.map(result => ({
+			filePath: result.location.uri.fsPath,
+			line: result.location.range.start.line,
+			column: result.location.range.start.character,
+			gameObjectName: result.gameObjectName
+		}))
+	}));
+
+	extensionContext.globalState.update("scanHistory", serialized);
+}
+
+function loadScanHistory() {
+	const serialized = extensionContext.globalState.get<SerializedScanHistoryEntry[]>("scanHistory") ?? [];
+
+	scanHistory = serialized.map(entry => ({
+		scriptPath: entry.scriptPath,
+		scriptName: entry.scriptName,
+		guid: entry.guid,
+		scannedAt: new Date(entry.scannedAt),
+		results: entry.results.map(result => ({
+			location: new vscode.Location(
+				vscode.Uri.file(result.filePath),
+				new vscode.Position(result.line, result.column)
+			),
+			gameObjectName: result.gameObjectName
+		}))
+	}));
 }
