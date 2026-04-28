@@ -1,16 +1,6 @@
 import * as vscode from "vscode";
 import * as path from "path";
 
-const SEARCH_GLOBS = [
-	"**/*.unity",
-	"**/*.prefab",
-	"**/*.asset",
-	"**/*.controller",
-	"**/*.overrideController",
-	"**/*.anim",
-	"**/*.mat"
-];
-
 let usageTreeProvider: UsageTreeProvider;
 let lastScriptUri: vscode.Uri | undefined;
 let lastGuid: string | undefined;
@@ -599,7 +589,21 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 				];
 			}
 
-			return [...this.groupedResults.keys()].map(
+			const visibleGroups = [...this.groupedResults.keys()]
+				.filter(group => this.getFilteredResultsForGroup(group).length > 0);
+
+			if (visibleGroups.length === 0) {
+				return [
+					new UsageTreeItem(
+						`No results matching "${currentFilter}"`,
+						vscode.TreeItemCollapsibleState.None,
+						undefined,
+						"placeholder"
+					)
+				];
+			}
+
+			return visibleGroups.map(
 				group => new UsageTreeItem(
 					group,
 					vscode.TreeItemCollapsibleState.Expanded,
@@ -609,16 +613,7 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 			);
 		}
 
-		let results = this.groupedResults.get(element.label) ?? [];
-
-		if (currentFilter) {
-			results = results.filter(result => {
-				const file = path.basename(result.location.uri.fsPath).toLowerCase();
-				const go = result.gameObjectName?.toLowerCase() ?? "";
-
-				return file.includes(currentFilter) || go.includes(currentFilter);
-			});
-		}
+		const results = this.getFilteredResultsForGroup(element.label);
 
 		return results.map(result => {
 			const relativePath = vscode.workspace.asRelativePath(result.location.uri);
@@ -637,6 +632,26 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 				: `Line ${result.location.range.start.line + 1}`;
 
 			return item;
+		});
+	}
+
+	private getFilteredResultsForGroup(group: string): UsageResult[] {
+		let results = this.groupedResults.get(group) ?? [];
+
+		if (!currentFilter) {
+			return results;
+		}
+
+		return results.filter(result => {
+			const relativePath = vscode.workspace.asRelativePath(result.location.uri).toLowerCase();
+			const fileName = path.basename(result.location.uri.fsPath).toLowerCase();
+			const gameObjectName = result.gameObjectName?.toLowerCase() ?? "";
+
+			return (
+				relativePath.includes(currentFilter) ||
+				fileName.includes(currentFilter) ||
+				gameObjectName.includes(currentFilter)
+			);
 		});
 	}
 }
