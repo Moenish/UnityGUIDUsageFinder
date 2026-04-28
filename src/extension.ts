@@ -219,6 +219,27 @@ export function activate(context: vscode.ExtensionContext) {
 		)
 	);
 
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			"unityGuidUsageFinder.openAllUsages",
+			async () => {
+				const results = usageTreeProvider.getAllResults();
+
+				if (results.length === 0) {
+					vscode.window.showInformationMessage("No Unity GUID usage results to open.");
+					return;
+				}
+
+				for (const result of results) {
+					await vscode.window.showTextDocument(result.location.uri, {
+						preview: false,
+						preserveFocus: true
+					});
+				}
+			}
+		)
+	);
+
 	context.subscriptions.push(disposable);
 }
 
@@ -451,6 +472,10 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 	clearResults() {
 		this.groupedResults.clear();
 		this.emitter.fire();
+	}
+
+	getAllResults(): UsageResult[] {
+		return [...this.groupedResults.values()].flat();
 	}
 
 	getTreeItem(element: UsageTreeItem): vscode.TreeItem {

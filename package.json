@@ -16,7 +16,8 @@
     "onCommand:unityGuidUsageFinder.copyCurrentScriptGuid",
     "onCommand:unityGuidUsageFinder.showScanHistory",
     "onCommand:unityGuidUsageFinder.loadHistoryEntry",
-    "onCommand:unityGuidUsageFinder.revealUsageInExplorer"
+    "onCommand:unityGuidUsageFinder.revealUsageInExplorer",
+    "onCommand:unityGuidUsageFinder.openAllUsages"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -52,6 +53,11 @@
         "command": "unityGuidUsageFinder.revealUsageInExplorer",
         "title": "Reveal Usage in Explorer",
         "icon": "$(folder-opened)"
+      },
+      {
+        "command": "unityGuidUsageFinder.openAllUsages",
+        "title": "Open All Usages",
+        "icon": "$(multiple-windows)"
       }
     ],
     "menus": {
@@ -89,6 +95,11 @@
           "command": "unityGuidUsageFinder.clearResults",
           "when": "view == unityGuidUsageFinder.resultsView",
           "group": "navigation@2"
+        },
+        {
+          "command": "unityGuidUsageFinder.openAllUsages",
+          "when": "view == unityGuidUsageFinder.resultsView",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
