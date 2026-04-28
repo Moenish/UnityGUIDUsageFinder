@@ -10,7 +10,7 @@
     "Other"
   ],
   "icon": "resources/icon.png",
-  "publisher": "moenish",
+  "publisher": "Moenish",
   "repository": {
     "type": "git",
     "url": "https://github.com/Moenish/UnityGUIDUsageFinder"
