@@ -210,6 +210,11 @@
           "minimum": 0,
           "maximum": 200,
           "description": "Maximum number of previous scans to keep in history. Set to 0 to disable scan history."
+        },
+        "unityGuidUsageFinder.showQuickPickAfterScan": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a Quick Pick list of usages after a manual scan completes."
         }
       }
     }

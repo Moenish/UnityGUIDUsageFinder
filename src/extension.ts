@@ -463,7 +463,7 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string, silent = fals
 		`Found ${matches.length} GUID reference(s) in ${new Set(locations.map(m => m.uri.fsPath)).size} file(s).`
 	);
 
-	if (!silent) {
+	if (!silent && shouldShowQuickPickAfterScan()) {
 		const selected = await vscode.window.showQuickPick(
 			matches.map((result) => {
 				const location = result.location;
@@ -901,4 +901,9 @@ function getScanBatchSize(): number {
 function getMaxHistoryEntries(): number {
 	const config = vscode.workspace.getConfiguration("unityGuidUsageFinder");
 	return config.get<number>("maxHistoryEntries") ?? 20;
+}
+
+function shouldShowQuickPickAfterScan(): boolean {
+	const config = vscode.workspace.getConfiguration("unityGuidUsageFinder");
+	return config.get<boolean>("showQuickPickAfterScan") ?? true;
 }
