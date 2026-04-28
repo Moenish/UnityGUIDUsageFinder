@@ -11,6 +11,19 @@ const SEARCH_GLOBS = [
 	"**/*.mat"
 ];
 
+let usageTreeProvider: UsageTreeProvider;
+let lastScriptUri: vscode.Uri | undefined;
+let lastGuid: string | undefined;
+type ScanHistoryEntry = {
+	scriptPath: string;
+	scriptName: string;
+	guid: string;
+	scannedAt: Date;
+	results: UsageResult[];
+};
+
+let scanHistory: ScanHistoryEntry[] = [];
+
 export function activate(context: vscode.ExtensionContext) {
 	const disposable = vscode.commands.registerCommand(
 		"unityGuidUsageFinder.findScriptUsages",
@@ -117,14 +130,45 @@ export function activate(context: vscode.ExtensionContext) {
 		)
 	);
 
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			"unityGuidUsageFinder.showScanHistory",
+			async () => {
+				if (scanHistory.length === 0) {
+					vscode.window.showInformationMessage("No Unity GUID scan history yet.");
+					return;
+				}
+
+				const selected = await vscode.window.showQuickPick(
+					scanHistory.map(entry => ({
+						label: entry.scriptName,
+						description: `${entry.results.length} result(s)`,
+						detail: `${entry.scriptPath} — ${entry.scannedAt.toLocaleString()}`,
+						entry
+					})),
+					{
+						placeHolder: "Select a previous Unity GUID scan"
+					}
+				);
+
+				if (!selected) {
+					return;
+				}
+
+				const grouped = groupMatches(selected.entry.results);
+				usageTreeProvider.setResults(grouped);
+
+				vscode.window.showInformationMessage(
+					`Restored scan: ${selected.entry.scriptName} (${selected.entry.results.length} result(s))`
+				);
+			}
+		)
+	);
+
 	context.subscriptions.push(disposable);
 }
 
 export function deactivate() { }
-
-let usageTreeProvider: UsageTreeProvider;
-let lastScriptUri: vscode.Uri | undefined;
-let lastGuid: string | undefined;
 
 function getTargetScriptUri(uri?: vscode.Uri): vscode.Uri | undefined {
 	if (uri) {
@@ -221,6 +265,7 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 
 	const grouped = groupMatches(matches);
 	usageTreeProvider.setResults(grouped);
+	addScanToHistory(scriptUri, guid, matches);
 
 	for (const [groupName, groupLocations] of grouped) {
 		output.appendLine(groupName);
@@ -314,7 +359,8 @@ class UsageTreeItem extends vscode.TreeItem {
 	constructor(
 		public readonly label: string,
 		public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-		public readonly location?: vscode.Location
+		public readonly location?: vscode.Location,
+		public readonly groupName?: string
 	) {
 		super(label, collapsibleState);
 
@@ -328,6 +374,10 @@ class UsageTreeItem extends vscode.TreeItem {
 			this.description = `Line ${location.range.start.line + 1}`;
 			this.tooltip = location.uri.fsPath;
 			this.contextValue = "usage";
+			this.iconPath = new vscode.ThemeIcon("go-to-file");
+		} else {
+			this.contextValue = "usageGroup";
+			this.iconPath = getGroupIcon(groupName ?? label);
 		}
 	}
 }
@@ -355,7 +405,12 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 	getChildren(element?: UsageTreeItem): UsageTreeItem[] {
 		if (!element) {
 			return [...this.groupedResults.keys()].map(
-				group => new UsageTreeItem(group, vscode.TreeItemCollapsibleState.Expanded)
+				group => new UsageTreeItem(
+					group,
+					vscode.TreeItemCollapsibleState.Expanded,
+					undefined,
+					group
+				)
 			);
 		}
 
@@ -435,4 +490,38 @@ function getIncludePattern(): string {
 function getExcludePattern(): string {
 	const config = vscode.workspace.getConfiguration("unityGuidUsageFinder");
 	return config.get<string>("excludeGlob") ?? "**/{Library,Temp,Obj,Build,Builds,Logs,Packages}/**";
+}
+
+function getGroupIcon(groupName: string): vscode.ThemeIcon {
+	switch (groupName) {
+		case "Scenes":
+			return new vscode.ThemeIcon("symbol-namespace");
+		case "Prefabs":
+			return new vscode.ThemeIcon("package");
+		case "Assets / ScriptableObjects":
+			return new vscode.ThemeIcon("database");
+		case "Animators":
+			return new vscode.ThemeIcon("symbol-event");
+		case "Animations":
+			return new vscode.ThemeIcon("play-circle");
+		case "Materials":
+			return new vscode.ThemeIcon("symbol-color");
+		default:
+			return new vscode.ThemeIcon("files");
+	}
+}
+
+function addScanToHistory(scriptUri: vscode.Uri, guid: string, results: UsageResult[]) {
+	const entry: ScanHistoryEntry = {
+		scriptPath: scriptUri.fsPath,
+		scriptName: path.basename(scriptUri.fsPath),
+		guid,
+		scannedAt: new Date(),
+		results
+	};
+
+	scanHistory = [
+		entry,
+		...scanHistory.filter(existing => existing.scriptPath !== scriptUri.fsPath)
+	].slice(0, 20);
 }
