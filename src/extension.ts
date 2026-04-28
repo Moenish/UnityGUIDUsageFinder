@@ -429,7 +429,7 @@ class UsageTreeItem extends vscode.TreeItem {
 			this.description = `Line ${location.range.start.line + 1}`;
 			this.tooltip = location.uri.fsPath;
 			this.contextValue = "usage";
-			this.iconPath = new vscode.ThemeIcon("go-to-file");
+			this.iconPath = new vscode.ThemeIcon("go-to-file", new vscode.ThemeColor("charts.foreground"));
 		} else {
 			this.contextValue = "usageGroup";
 			this.iconPath = getGroupIcon(groupName ?? label);
@@ -550,17 +550,17 @@ function getExcludePattern(): string {
 function getGroupIcon(groupName: string): vscode.ThemeIcon {
 	switch (groupName) {
 		case "Scenes":
-			return new vscode.ThemeIcon("symbol-namespace");
+			return new vscode.ThemeIcon("symbol-namespace", new vscode.ThemeColor("charts.blue"));
 		case "Prefabs":
-			return new vscode.ThemeIcon("package");
+			return new vscode.ThemeIcon("package", new vscode.ThemeColor("charts.green"));
 		case "Assets / ScriptableObjects":
-			return new vscode.ThemeIcon("database");
+			return new vscode.ThemeIcon("database", new vscode.ThemeColor("charts.orange"));
 		case "Animators":
-			return new vscode.ThemeIcon("symbol-event");
+			return new vscode.ThemeIcon("symbol-event", new vscode.ThemeColor("charts.purple"));
 		case "Animations":
-			return new vscode.ThemeIcon("play-circle");
+			return new vscode.ThemeIcon("play-circle", new vscode.ThemeColor("charts.yellow"));
 		case "Materials":
-			return new vscode.ThemeIcon("symbol-color");
+			return new vscode.ThemeIcon("symbol-color", new vscode.ThemeColor("charts.red"));
 		default:
 			return new vscode.ThemeIcon("files");
 	}
@@ -607,8 +607,8 @@ class HistoryTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 
 			item.tooltip = `${entry.scriptPath}\n${entry.scannedAt.toLocaleString()}`;
 			item.iconPath = isCurrentHistoryEntry(entry)
-				? new vscode.ThemeIcon("star-full")
-				: new vscode.ThemeIcon("history");
+				? new vscode.ThemeIcon("star-full", new vscode.ThemeColor("charts.yellow"))
+				: new vscode.ThemeIcon("history", new vscode.ThemeColor("charts.blue"));
 			item.description = isCurrentHistoryEntry(entry)
 				? "current"
 				: entry.scannedAt.toLocaleTimeString();
