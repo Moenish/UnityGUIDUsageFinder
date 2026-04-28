@@ -288,12 +288,30 @@ export function activate(context: vscode.ExtensionContext) {
 		)
 	);
 
+	// Events
+
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeConfiguration(event => {
+			if (event.affectsConfiguration("unityGuidUsageFinder.autoRefresh")) {
+				vscode.window.showInformationMessage(
+					isAutoRefreshEnabled()
+						? "Unity GUID auto-refresh enabled."
+						: "Unity GUID auto-refresh disabled."
+				);
+			}
+		})
+	);
+
 	context.subscriptions.push(disposable);
 }
 
 export function deactivate() { }
 
 function scheduleAutoRefresh() {
+	if (!isAutoRefreshEnabled()) {
+		return;
+	}
+
 	if (!lastScriptUri || !lastGuid) {
 		return;
 	}
@@ -304,7 +322,7 @@ function scheduleAutoRefresh() {
 
 	autoRefreshTimer = setTimeout(async () => {
 		await findGuidUsages(lastScriptUri!, lastGuid!, true);
-	}, 750);
+	}, getAutoRefreshDebounceMs());
 }
 
 function setupAutoRefresh(context: vscode.ExtensionContext) {
@@ -317,6 +335,16 @@ function setupAutoRefresh(context: vscode.ExtensionContext) {
 	autoRefreshWatcher.onDidDelete(scheduleAutoRefresh, null, context.subscriptions);
 
 	context.subscriptions.push(autoRefreshWatcher);
+}
+
+function isAutoRefreshEnabled(): boolean {
+	const config = vscode.workspace.getConfiguration("unityGuidUsageFinder");
+	return config.get<boolean>("autoRefresh") ?? true;
+}
+
+function getAutoRefreshDebounceMs(): number {
+	const config = vscode.workspace.getConfiguration("unityGuidUsageFinder");
+	return config.get<number>("autoRefreshDebounceMs") ?? 750;
 }
 
 function getTargetScriptUri(uri?: vscode.Uri): vscode.Uri | undefined {

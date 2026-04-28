@@ -184,6 +184,18 @@
           "type": "string",
           "default": "**/{Library,Temp,Obj,Build,Builds,Logs,Packages}/**",
           "description": "Files/folders to exclude while scanning."
+        },
+        "unityGuidUsageFinder.autoRefresh": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically refresh the last Unity GUID scan when serialized Unity assets change."
+        },
+        "unityGuidUsageFinder.autoRefreshDebounceMs": {
+          "type": "number",
+          "default": 750,
+          "minimum": 100,
+          "maximum": 10000,
+          "description": "Delay before auto-refreshing after Unity serialized assets change."
         }
       }
     }
