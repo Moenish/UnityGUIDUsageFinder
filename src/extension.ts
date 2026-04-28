@@ -603,17 +603,24 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 				];
 			}
 
-			return visibleGroups.map(
-				group => new UsageTreeItem(
-					group,
+			return visibleGroups.map(group => {
+				const count = this.getFilteredResultsForGroup(group).length;
+
+				const item = new UsageTreeItem(
+					`${group} (${count})`,
 					vscode.TreeItemCollapsibleState.Expanded,
 					undefined,
 					group
-				)
-			);
+				);
+
+				item.id = group;
+
+				return item;
+			});
 		}
 
-		const results = this.getFilteredResultsForGroup(element.label);
+		const group = element.groupName ?? element.label;
+		const results = this.getFilteredResultsForGroup(group);
 
 		return results.map(result => {
 			const relativePath = vscode.workspace.asRelativePath(result.location.uri);
