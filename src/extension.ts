@@ -187,6 +187,10 @@ export function activate(context: vscode.ExtensionContext) {
 			(entry: ScanHistoryEntry) => {
 				const grouped = groupMatches(entry.results);
 				usageTreeProvider.setResults(grouped);
+
+				lastScriptUri = vscode.Uri.file(entry.scriptPath);
+				lastGuid = entry.guid;
+				historyTreeProvider.refresh();
 			}
 		)
 	);
@@ -292,6 +296,7 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 	const grouped = groupMatches(matches);
 	usageTreeProvider.setResults(grouped);
 	addScanToHistory(scriptUri, guid, matches);
+	historyTreeProvider.refresh();
 
 	for (const [groupName, groupLocations] of grouped) {
 		output.appendLine(groupName);
@@ -577,7 +582,12 @@ class HistoryTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 			);
 
 			item.tooltip = `${entry.scriptPath}\n${entry.scannedAt.toLocaleString()}`;
-			item.iconPath = new vscode.ThemeIcon("history");
+			item.iconPath = isCurrentHistoryEntry(entry)
+				? new vscode.ThemeIcon("star-full")
+				: new vscode.ThemeIcon("history");
+			item.description = isCurrentHistoryEntry(entry)
+				? "current"
+				: entry.scannedAt.toLocaleTimeString();
 
 			item.command = {
 				command: "unityGuidUsageFinder.loadHistoryEntry",
@@ -638,6 +648,10 @@ function loadScanHistory() {
 			gameObjectName: result.gameObjectName
 		}))
 	}));
+}
+
+function isCurrentHistoryEntry(entry: ScanHistoryEntry): boolean {
+	return lastScriptUri?.fsPath === entry.scriptPath && lastGuid === entry.guid;
 }
 
 function chunkArray<T>(items: T[], chunkSize: number): T[][] {
