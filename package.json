@@ -203,6 +203,13 @@
           "minimum": 1,
           "maximum": 64,
           "description": "Number of Unity serialized files scanned in parallel. Higher values may scan faster but use more CPU/disk."
+        },
+        "unityGuidUsageFinder.maxHistoryEntries": {
+          "type": "number",
+          "default": 20,
+          "minimum": 0,
+          "maximum": 200,
+          "description": "Maximum number of previous scans to keep in history. Set to 0 to disable scan history."
         }
       }
     }

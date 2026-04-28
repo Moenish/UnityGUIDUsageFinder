@@ -735,10 +735,19 @@ function addScanToHistory(scriptUri: vscode.Uri, guid: string, results: UsageRes
 		results
 	};
 
+	const maxHistoryEntries = getMaxHistoryEntries();
+
+	if (maxHistoryEntries <= 0) {
+		scanHistory = [];
+		saveScanHistory();
+		historyTreeProvider?.refresh();
+		return;
+	}
+
 	scanHistory = [
 		entry,
 		...scanHistory.filter(existing => existing.scriptPath !== scriptUri.fsPath)
-	].slice(0, 20);
+	].slice(0, maxHistoryEntries);
 
 	saveScanHistory();
 	historyTreeProvider?.refresh();
@@ -887,4 +896,9 @@ async function scanFileForGuid(file: vscode.Uri, guid: string): Promise<UsageRes
 function getScanBatchSize(): number {
 	const config = vscode.workspace.getConfiguration("unityGuidUsageFinder");
 	return config.get<number>("scanBatchSize") ?? 12;
+}
+
+function getMaxHistoryEntries(): number {
+	const config = vscode.workspace.getConfiguration("unityGuidUsageFinder");
+	return config.get<number>("maxHistoryEntries") ?? 20;
 }
