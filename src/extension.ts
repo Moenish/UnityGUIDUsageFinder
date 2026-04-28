@@ -533,6 +533,10 @@ class UsageTreeItem extends vscode.TreeItem {
 		if (groupName === "filterIndicator") {
 			this.iconPath = new vscode.ThemeIcon("filter", new vscode.ThemeColor("charts.yellow"));
 			this.contextValue = "filterIndicator";
+			this.command = {
+				command: "unityGuidUsageFinder.filterResults",
+				title: "Edit Filter"
+			};
 			return;
 		}
 
@@ -629,7 +633,7 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 			if (currentFilter) {
 				return [
 					new UsageTreeItem(
-						`Filter: "${currentFilter}"`,
+						`Filter: "${currentFilter}" — ${this.getFilteredResultCount()} match(es)`,
 						vscode.TreeItemCollapsibleState.None,
 						undefined,
 						"filterIndicator"
@@ -682,6 +686,11 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 				gameObjectName.includes(currentFilter)
 			);
 		});
+	}
+
+	private getFilteredResultCount(): number {
+		return [...this.groupedResults.keys()]
+			.reduce((total, group) => total + this.getFilteredResultsForGroup(group).length, 0);
 	}
 }
 
