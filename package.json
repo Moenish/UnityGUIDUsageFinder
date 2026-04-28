@@ -2,7 +2,7 @@
   "name": "unity-guid-usage-finder",
   "displayName": "Unity GUID Usage Finder",
   "description": "Find where Unity scripts are used in scenes, prefabs, and serialized assets by GUID.",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.90.0"
   },
