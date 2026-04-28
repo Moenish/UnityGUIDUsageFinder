@@ -79,15 +79,8 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 	output.appendLine(`GUID: ${guid}`);
 	output.appendLine("");
 
-	const workspaceFolders = vscode.workspace.workspaceFolders;
-
-	if (!workspaceFolders || workspaceFolders.length === 0) {
-		vscode.window.showErrorMessage("No workspace folder is open.");
-		return;
-	}
-
-	const includePattern = `{${SEARCH_GLOBS.join(",")}}`;
-	const files = await vscode.workspace.findFiles(includePattern, "**/Library/**");
+	const includePattern = "{Assets/**/*.unity,Assets/**/*.prefab,Assets/**/*.asset,Assets/**/*.controller,Assets/**/*.overrideController,Assets/**/*.anim,Assets/**/*.mat}";
+	const files = await vscode.workspace.findFiles(includePattern, "**/{Library,Temp,Obj,Build,Builds,Logs,Packages}/**");
 
 	const matches: vscode.Location[] = [];
 
@@ -106,28 +99,42 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 			if (column >= 0) {
 				const position = new vscode.Position(i, column);
 				matches.push(new vscode.Location(file, position));
-
-				const relativePath = vscode.workspace.asRelativePath(file);
-				output.appendLine(`${relativePath}:${i + 1}:${column + 1}`);
-				output.appendLine(`  ${lines[i].trim()}`);
 			}
 		}
 	}
 
-	output.appendLine("");
-	output.appendLine(`Found ${matches.length} GUID reference(s).`);
-
 	if (matches.length === 0) {
+		output.appendLine("No Unity serialized usages found.");
 		vscode.window.showInformationMessage("No Unity serialized usages found for this script GUID.");
 		return;
 	}
 
+	const grouped = groupMatches(matches);
+
+	for (const [groupName, locations] of grouped) {
+		output.appendLine(groupName);
+		output.appendLine("=".repeat(groupName.length));
+
+		for (const location of locations) {
+			const relativePath = vscode.workspace.asRelativePath(location.uri);
+			output.appendLine(`${relativePath}:${location.range.start.line + 1}:${location.range.start.character + 1}`);
+		}
+
+		output.appendLine("");
+	}
+
+	output.appendLine(`Found ${matches.length} GUID reference(s) in ${new Set(matches.map(m => m.uri.fsPath)).size} file(s).`);
+
 	const selected = await vscode.window.showQuickPick(
-		matches.map((location) => ({
-			label: vscode.workspace.asRelativePath(location.uri),
-			description: `Line ${location.range.start.line + 1}`,
-			location
-		})),
+		matches.map((location) => {
+			const relativePath = vscode.workspace.asRelativePath(location.uri);
+			return {
+				label: path.basename(location.uri.fsPath),
+				description: getFileGroup(location.uri.fsPath),
+				detail: `${relativePath}:${location.range.start.line + 1}`,
+				location
+			};
+		}),
 		{
 			placeHolder: "Select a Unity usage to open"
 		}
@@ -136,10 +143,50 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 	if (selected) {
 		const doc = await vscode.workspace.openTextDocument(selected.location.uri);
 		const editor = await vscode.window.showTextDocument(doc);
+
 		editor.selection = new vscode.Selection(
 			selected.location.range.start,
 			selected.location.range.start
 		);
+
 		editor.revealRange(selected.location.range, vscode.TextEditorRevealType.InCenter);
+	}
+}
+
+function groupMatches(matches: vscode.Location[]): Map<string, vscode.Location[]> {
+	const grouped = new Map<string, vscode.Location[]>();
+
+	for (const match of matches) {
+		const group = getFileGroup(match.uri.fsPath);
+
+		if (!grouped.has(group)) {
+			grouped.set(group, []);
+		}
+
+		grouped.get(group)!.push(match);
+	}
+
+	return new Map([...grouped.entries()].sort(([a], [b]) => a.localeCompare(b)));
+}
+
+function getFileGroup(filePath: string): string {
+	const ext = path.extname(filePath).toLowerCase();
+
+	switch (ext) {
+		case ".unity":
+			return "Scenes";
+		case ".prefab":
+			return "Prefabs";
+		case ".asset":
+			return "Assets / ScriptableObjects";
+		case ".controller":
+		case ".overridecontroller":
+			return "Animators";
+		case ".anim":
+			return "Animations";
+		case ".mat":
+			return "Materials";
+		default:
+			return "Other";
 	}
 }
