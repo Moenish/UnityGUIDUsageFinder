@@ -86,6 +86,29 @@
           "name": "Script Usages"
         }
       ]
+    },
+    "configuration": {
+      "title": "Unity GUID Usage Finder",
+      "properties": {
+        "unityGuidUsageFinder.includeGlobs": {
+          "type": "array",
+          "default": [
+            "Assets/**/*.unity",
+            "Assets/**/*.prefab",
+            "Assets/**/*.asset",
+            "Assets/**/*.controller",
+            "Assets/**/*.overrideController",
+            "Assets/**/*.anim",
+            "Assets/**/*.mat"
+          ],
+          "description": "Unity serialized files to scan for script GUID usages."
+        },
+        "unityGuidUsageFinder.excludeGlob": {
+          "type": "string",
+          "default": "**/{Library,Temp,Obj,Build,Builds,Logs,Packages}/**",
+          "description": "Files/folders to exclude while scanning."
+        }
+      }
     }
   },
   "scripts": {

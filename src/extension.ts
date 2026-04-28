@@ -157,8 +157,9 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 	output.appendLine(`GUID: ${guid}`);
 	output.appendLine("");
 
-	const includePattern = "{Assets/**/*.unity,Assets/**/*.prefab,Assets/**/*.asset,Assets/**/*.controller,Assets/**/*.overrideController,Assets/**/*.anim,Assets/**/*.mat}";
-	const files = await vscode.workspace.findFiles(includePattern, "**/{Library,Temp,Obj,Build,Builds,Logs,Packages}/**");
+	const includePattern = getIncludePattern();
+	const excludePattern = getExcludePattern();
+	const files = await vscode.workspace.findFiles(includePattern, excludePattern);
 
 	const matchesByFile = new Map<string, UsageResult>();
 
@@ -398,4 +399,20 @@ function findGameObjectNameForScript(text: string, guid: string): string | undef
 
 function escapeRegExp(value: string): string {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function getIncludePattern(): string {
+	const config = vscode.workspace.getConfiguration("unityGuidUsageFinder");
+	const globs = config.get<string[]>("includeGlobs") ?? [];
+
+	if (globs.length === 0) {
+		return "{Assets/**/*.unity,Assets/**/*.prefab,Assets/**/*.asset}";
+	}
+
+	return `{${globs.join(",")}}`;
+}
+
+function getExcludePattern(): string {
+	const config = vscode.workspace.getConfiguration("unityGuidUsageFinder");
+	return config.get<string>("excludeGlob") ?? "**/{Library,Temp,Obj,Build,Builds,Logs,Packages}/**";
 }
