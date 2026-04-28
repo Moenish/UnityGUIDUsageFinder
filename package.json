@@ -35,6 +35,23 @@
           "group": "navigation"
         }
       ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "unityGuidUsageFinder",
+          "title": "Unity GUID Finder",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "unityGuidUsageFinder": [
+        {
+          "id": "unityGuidUsageFinder.resultsView",
+          "name": "Script Usages"
+        }
+      ]
     }
   },
   "scripts": {

@@ -46,10 +46,32 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	);
 
+	usageTreeProvider = new UsageTreeProvider();
+
+	context.subscriptions.push(
+		vscode.window.registerTreeDataProvider(
+			"unityGuidUsageFinder.resultsView",
+			usageTreeProvider
+		)
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			"unityGuidUsageFinder.openUsage",
+			async (location: vscode.Location) => {
+				const doc = await vscode.workspace.openTextDocument(location.uri);
+				const editor = await vscode.window.showTextDocument(doc);
+				editor.selection = new vscode.Selection(location.range.start, location.range.start);
+				editor.revealRange(location.range, vscode.TextEditorRevealType.InCenter);
+			}
+		)
+	);
+
 	context.subscriptions.push(disposable);
 }
 
 export function deactivate() { }
+let usageTreeProvider: UsageTreeProvider;
 
 function getTargetScriptUri(uri?: vscode.Uri): vscode.Uri | undefined {
 	if (uri) {
@@ -110,6 +132,7 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 	}
 
 	const grouped = groupMatches(matches);
+	usageTreeProvider.setResults(grouped);
 
 	for (const [groupName, locations] of grouped) {
 		output.appendLine(groupName);
@@ -188,5 +211,62 @@ function getFileGroup(filePath: string): string {
 			return "Materials";
 		default:
 			return "Other";
+	}
+}
+
+class UsageTreeItem extends vscode.TreeItem {
+	constructor(
+		public readonly label: string,
+		public readonly collapsibleState: vscode.TreeItemCollapsibleState,
+		public readonly location?: vscode.Location
+	) {
+		super(label, collapsibleState);
+
+		if (location) {
+			this.command = {
+				command: "unityGuidUsageFinder.openUsage",
+				title: "Open Usage",
+				arguments: [location]
+			};
+
+			this.description = `Line ${location.range.start.line + 1}`;
+			this.tooltip = location.uri.fsPath;
+			this.contextValue = "usage";
+		}
+	}
+}
+
+class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
+	private readonly emitter = new vscode.EventEmitter<UsageTreeItem | undefined | null | void>();
+	readonly onDidChangeTreeData = this.emitter.event;
+
+	private groupedResults = new Map<string, vscode.Location[]>();
+
+	setResults(groupedResults: Map<string, vscode.Location[]>) {
+		this.groupedResults = groupedResults;
+		this.emitter.fire();
+	}
+
+	getTreeItem(element: UsageTreeItem): vscode.TreeItem {
+		return element;
+	}
+
+	getChildren(element?: UsageTreeItem): UsageTreeItem[] {
+		if (!element) {
+			return [...this.groupedResults.keys()].map(
+				group => new UsageTreeItem(group, vscode.TreeItemCollapsibleState.Expanded)
+			);
+		}
+
+		const locations = this.groupedResults.get(element.label) ?? [];
+
+		return locations.map(location => {
+			const relativePath = vscode.workspace.asRelativePath(location.uri);
+			return new UsageTreeItem(
+				relativePath,
+				vscode.TreeItemCollapsibleState.None,
+				location
+			);
+		});
 	}
 }
