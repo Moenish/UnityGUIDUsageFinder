@@ -163,32 +163,47 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string): Promise<void
 
 	const matchesByFile = new Map<string, UsageResult>();
 
-	for (const file of files) {
-		const text = await readTextFile(file);
+	await vscode.window.withProgress(
+		{
+			location: vscode.ProgressLocation.Notification,
+			title: "Scanning Unity serialized assets",
+			cancellable: false
+		},
+		async (progress) => {
+			for (let index = 0; index < files.length; index++) {
+				const file = files[index];
 
-		if (!text.includes(guid)) {
-			continue;
-		}
+				progress.report({
+					message: `${index + 1}/${files.length}: ${vscode.workspace.asRelativePath(file)}`
+				});
 
-		const lines = text.split(/\r?\n/);
+				const text = await readTextFile(file);
 
-		for (let i = 0; i < lines.length; i++) {
-			const column = lines[i].indexOf(guid);
-
-			if (column >= 0) {
-				const position = new vscode.Position(i, column);
-
-				if (!matchesByFile.has(file.fsPath)) {
-					matchesByFile.set(file.fsPath, {
-						location: new vscode.Location(file, position),
-						gameObjectName: findGameObjectNameForScript(text, guid)
-					});
+				if (!text.includes(guid)) {
+					continue;
 				}
 
-				break;
+				const lines = text.split(/\r?\n/);
+
+				for (let i = 0; i < lines.length; i++) {
+					const column = lines[i].indexOf(guid);
+
+					if (column >= 0) {
+						const position = new vscode.Position(i, column);
+
+						if (!matchesByFile.has(file.fsPath)) {
+							matchesByFile.set(file.fsPath, {
+								location: new vscode.Location(file, position),
+								gameObjectName: findGameObjectNameForScript(text, guid)
+							});
+						}
+
+						break;
+					}
+				}
 			}
 		}
-	}
+	);
 
 	const matches = [...matchesByFile.values()];
 	const locations = matches.map(m => m.location);
