@@ -384,7 +384,7 @@ async function findGuidUsages(scriptUri: vscode.Uri, guid: string, silent = fals
 
 	const matchesByFile = new Map<string, UsageResult>();
 
-	const batchSize = 12;
+	const batchSize = getScanBatchSize();
 	const batches = chunkArray(files, batchSize);
 	let scannedCount = 0;
 
@@ -882,4 +882,9 @@ async function scanFileForGuid(file: vscode.Uri, guid: string): Promise<UsageRes
 	}
 
 	return undefined;
+}
+
+function getScanBatchSize(): number {
+	const config = vscode.workspace.getConfiguration("unityGuidUsageFinder");
+	return config.get<number>("scanBatchSize") ?? 12;
 }
