@@ -9,6 +9,16 @@
   "categories": [
     "Other"
   ],
+  "icon": "resources/icon.png",
+  "publisher": "moenish",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Moenish/UnityGUIDUsageFinder"
+  },
+  "homepage": "https://github.com/Moenish/UnityGUIDUsageFinder",
+  "bugs": {
+    "url": "https://github.com/Moenish/UnityGUIDUsageFinder/issues"
+  },
   "license": "MIT",
   "keywords": [
     "unity",
