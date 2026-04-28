@@ -240,6 +240,18 @@ export function activate(context: vscode.ExtensionContext) {
 		)
 	);
 
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			"unityGuidUsageFinder.clearScanHistory",
+			() => {
+				scanHistory = [];
+				saveScanHistory();
+				historyTreeProvider.refresh();
+				vscode.window.showInformationMessage("Unity GUID scan history cleared.");
+			}
+		)
+	);
+
 	context.subscriptions.push(disposable);
 }
 
