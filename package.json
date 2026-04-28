@@ -18,7 +18,9 @@
     "onCommand:unityGuidUsageFinder.loadHistoryEntry",
     "onCommand:unityGuidUsageFinder.revealUsageInExplorer",
     "onCommand:unityGuidUsageFinder.openAllUsages",
-    "onCommand:unityGuidUsageFinder.clearScanHistory"
+    "onCommand:unityGuidUsageFinder.clearScanHistory",
+    "onCommand:unityGuidUsageFinder.filterResults",
+    "onCommand:unityGuidUsageFinder.clearFilter"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -64,6 +66,16 @@
         "command": "unityGuidUsageFinder.clearScanHistory",
         "title": "Clear History",
         "icon": "$(trash)"
+      },
+      {
+        "command": "unityGuidUsageFinder.filterResults",
+        "title": "Filter Results",
+        "icon": "$(search)"
+      },
+      {
+        "command": "unityGuidUsageFinder.clearFilter",
+        "title": "Clear Filter",
+        "icon": "$(close)"
       }
     ],
     "menus": {
@@ -111,6 +123,16 @@
           "command": "unityGuidUsageFinder.clearScanHistory",
           "when": "view == unityGuidUsageFinder.historyView",
           "group": "navigation@1"
+        },
+        {
+          "command": "unityGuidUsageFinder.filterResults",
+          "when": "view == unityGuidUsageFinder.resultsView",
+          "group": "navigation@4"
+        },
+        {
+          "command": "unityGuidUsageFinder.clearFilter",
+          "when": "view == unityGuidUsageFinder.resultsView",
+          "group": "navigation@5"
         }
       ],
       "view/item/context": [

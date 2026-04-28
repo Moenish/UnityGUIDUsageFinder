@@ -25,6 +25,7 @@ type ScanHistoryEntry = {
 let scanHistory: ScanHistoryEntry[] = [];
 let historyTreeProvider: HistoryTreeProvider;
 let extensionContext: vscode.ExtensionContext;
+let currentFilter: string = "";
 
 export function activate(context: vscode.ExtensionContext) {
 	extensionContext = context;
@@ -248,6 +249,33 @@ export function activate(context: vscode.ExtensionContext) {
 				saveScanHistory();
 				historyTreeProvider.refresh();
 				vscode.window.showInformationMessage("Unity GUID scan history cleared.");
+			}
+		)
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			"unityGuidUsageFinder.filterResults",
+			async () => {
+				const value = await vscode.window.showInputBox({
+					prompt: "Filter Unity usages (file name or GameObject)",
+					value: currentFilter
+				});
+
+				if (value === undefined) {
+					return;
+				}
+
+				usageTreeProvider.setFilter(value);
+			}
+		)
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			"unityGuidUsageFinder.clearFilter",
+			() => {
+				usageTreeProvider.setFilter("");
 			}
 		)
 	);
@@ -482,6 +510,11 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 
 	private groupedResults = new Map<string, UsageResult[]>();
 
+	setFilter(filter: string) {
+		currentFilter = filter.toLowerCase();
+		this.emitter.fire();
+	}
+
 	setResults(groupedResults: Map<string, UsageResult[]>) {
 		this.groupedResults = groupedResults;
 		this.emitter.fire();
@@ -523,7 +556,16 @@ class UsageTreeProvider implements vscode.TreeDataProvider<UsageTreeItem> {
 			);
 		}
 
-		const results = this.groupedResults.get(element.label) ?? [];
+		let results = this.groupedResults.get(element.label) ?? [];
+
+		if (currentFilter) {
+			results = results.filter(result => {
+				const file = path.basename(result.location.uri.fsPath).toLowerCase();
+				const go = result.gameObjectName?.toLowerCase() ?? "";
+
+				return file.includes(currentFilter) || go.includes(currentFilter);
+			});
+		}
 
 		return results.map(result => {
 			const relativePath = vscode.workspace.asRelativePath(result.location.uri);
